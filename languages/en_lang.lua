@@ -351,4 +351,8 @@ Locales["en_lang"] = {
     furnitureBookFailed = "Could not add the furniture catalog. Make sure you have space.",
     alreadyHasFurnitureBook = "You already have a furniture catalog.",
     furnitureBookUnavailable = "Furniture catalog item is not configured.",
+
+    -- New
+    freeHouseBlipsHidden = "Free house blips are now hidden.",
+    freeHouseBlipsShown = "Free house blips are now visible.",
 }

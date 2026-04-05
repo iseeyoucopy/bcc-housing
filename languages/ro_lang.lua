@@ -359,4 +359,8 @@ Locales["ro_lang"] = {
 	furnitureBookFailed = "Nu am putut adauga catalogul de mobilier. Asigura-te ca ai loc.",
 	alreadyHasFurnitureBook = "Ai deja un catalog de mobilier.",
 	furnitureBookUnavailable = "Itemul catalog de mobilier nu este configurat.",
+
+	-- New
+	freeHouseBlipsHidden = "Blips-urile caselor libere sunt acum ascunse.",
+	freeHouseBlipsShown = "Blips-urile caselor libere sunt acum vizibile.",
 }

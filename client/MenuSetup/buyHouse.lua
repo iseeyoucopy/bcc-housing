@@ -1,5 +1,33 @@
 PurchasedHouses = PurchasedHouses or {}
 
+-- Steuert, ob freie Haus-Blips aktuell angezeigt werden sollen (Toggle-State)
+local freeHouseBlipsVisible = Config.ShowFreeHouseBlips
+
+-- Hilfsfunktion: Alle Sale-Blips der freien Häuser entfernen
+local function removeFreeHouseBlips()
+    for _, house in pairs(Houses) do
+        if house.blip and house.blip.sale and house.blip.sale.active then
+            if HouseBlips[house.uniqueName] then
+                BccUtils.Blips:RemoveBlip(HouseBlips[house.uniqueName].rawblip)
+                HouseBlips[house.uniqueName] = nil
+            end
+        end
+    end
+end
+
+-- Toggle-Command: Nur registrieren wenn ShowFreeHouseBlips = false
+if not Config.ShowFreeHouseBlips and Config.ShowFreeHouseBlipCommand and Config.ShowFreeHouseBlipCommand ~= '' then
+    RegisterCommand(Config.ShowFreeHouseBlipCommand, function()
+        freeHouseBlipsVisible = not freeHouseBlipsVisible
+        if not freeHouseBlipsVisible then
+            removeFreeHouseBlips()
+            Notify(_U("freeHouseBlipsHidden"), 'info', 4000)
+        else
+            Notify(_U("freeHouseBlipsShown"), 'info', 4000)
+        end
+    end, false)
+end
+
 CreateThread(function()
     -- Request the purchased houses list from the server when the resource starts
     local success, houses = BccUtils.RPC:CallAsync('bcc-housing:getPurchasedHouses', {})

@@ -327,4 +327,8 @@ Locales["ua_lang"] = {
     hours = " is open from",
     moreInfo = "More Info",
     getFurnitureBook = "Get Furniture Catalog",
+
+    -- New
+    freeHouseBlipsHidden = "Блипи вільних будинків тепер приховані.",
+    freeHouseBlipsShown = "Блипи вільних будинків тепер видимі.",
 }

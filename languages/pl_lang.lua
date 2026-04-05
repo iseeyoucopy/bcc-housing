@@ -351,4 +351,8 @@ Locales["pl_lang"] = {
     furnitureBookFailed = "Nie udało się dodać katalogu mebli. Upewnij się, że masz miejsce w ekwipunku.",
     alreadyHasFurnitureBook = "Posiadasz już katalog mebli.",
     furnitureBookUnavailable = "Przedmiot 'katalog mebli' nie został skonfigurowany.",
+
+    -- New
+    freeHouseBlipsHidden = "Free house blips are now hidden.",
+    freeHouseBlipsShown = "Free house blips are now visible.",
 }
