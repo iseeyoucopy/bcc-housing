@@ -1,5 +1,14 @@
 BccUtils.RPC:Register("bcc-housing:GetPlayersWithAccess", function(params, cb, recSource)
-    local houseId = params.houseId
+    local houseId = params and params.houseId
+    if not houseId then
+        cb({})
+        return
+    end
+    if not IsHouseOwner(recSource, houseId) and not IsHousingAdmin(recSource) then
+        NotifyClient(recSource, _U('noAccessToHouse'), 4000, 'error')
+        cb({})
+        return
+    end
     DBG:Info("Fetching players with access for House ID: " .. tostring(houseId))
 
     -- Query to fetch allowed character IDs for the house
@@ -40,6 +49,11 @@ BccUtils.RPC:Register('bcc-housing:NewPlayerGivenAccess', function(params, cb, s
     local recSource = params and params.recSource
 
     if not id or not houseid then
+        if cb then cb(false) end
+        return
+    end
+    if not IsHouseOwner(src, houseid) and not IsHousingAdmin(src) then
+        NotifyClient(src, _U('noAccessToHouse'), 4000, 'error')
         if cb then cb(false) end
         return
     end
@@ -144,6 +158,11 @@ BccUtils.RPC:Register('bcc-housing:RemovePlayerAccess', function(params, cb, src
     local houseId = params and params.houseId
     local playerId = params and params.playerId
     if not houseId or not playerId then
+        if cb then cb(false) end
+        return
+    end
+    if not IsHouseOwner(src, houseId) and not IsHousingAdmin(src) then
+        NotifyClient(src, _U('noAccessToHouse'), 4000, 'error')
         if cb then cb(false) end
         return
     end
