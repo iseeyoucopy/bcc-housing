@@ -439,4 +439,12 @@ Locales["ro_lang"] = {
     -- English fallbacks for translations not yet provided
     vendorRotatePreview = 'Rotate Preview',
     vendorZoomPreview = 'Camera Zoom',
+    unknownError = "Eroare necunoscuta.",
+    invalidHouseId = "ID casa invalid.",
+    furnNotSoldInvalid = "Mobilierul nu poate fi vandut din aceasta locatie.",
+    doorCreationFailed = "Nu s-a putut crea usa.",
+    doorSaveFailed = "Nu s-a putut salva usa.",
+    doorRemoveFailed = "Nu s-a putut sterge usa.",
+    freeHouseBlipsHidden = "Blipurile caselor libere au fost ascunse.",
+    freeHouseBlipsShown = "Blipurile caselor libere sunt acum vizibile.",
 }

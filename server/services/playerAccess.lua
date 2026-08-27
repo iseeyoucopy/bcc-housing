@@ -52,6 +52,8 @@ BccUtils.RPC:Register('bcc-housing:NewPlayerGivenAccess', function(params, cb, s
         if cb then cb(false) end
         return
     end
+    id = tostring(id)
+
     if not IsHouseOwner(src, houseid) and not IsHousingAdmin(src) then
         NotifyClient(src, _U('noAccessToHouse'), 4000, 'error')
         if cb then cb(false) end
@@ -81,7 +83,7 @@ BccUtils.RPC:Register('bcc-housing:NewPlayerGivenAccess', function(params, cb, s
     end
 
     local idsTable = {}
-    if houseData.allowed_ids ~= 'none' and houseData.allowed_ids ~= nil then
+    if houseData.allowed_ids ~= 'none' and houseData.allowed_ids ~= nil and houseData.allowed_ids ~= '' then
         idsTable = json.decode(houseData.allowed_ids)
         if not idsTable then
             DBG:Error("Error: Failed to decode 'allowed_ids' for houseid: " .. tostring(houseid))
@@ -92,7 +94,7 @@ BccUtils.RPC:Register('bcc-housing:NewPlayerGivenAccess', function(params, cb, s
 
     local exists = false
     for _, v in ipairs(idsTable) do
-        if id == v then
+        if id == tostring(v) then
             exists = true
             break
         end
@@ -102,15 +104,17 @@ BccUtils.RPC:Register('bcc-housing:NewPlayerGivenAccess', function(params, cb, s
     local houseMaxResident
     for _, h in pairs(Houses) do
         if h.uniqueName == houseData.uniqueName then
-            houseMaxResident = h.playerMax
-            DBG:Info("Matching house configuration found, House has a " .. houseMaxResident .. " person limit.")
+            houseMaxResident = tonumber(h.playerMax)
+            DBG:Info("Matching house configuration found, House has a " .. tostring(houseMaxResident) .. " person limit.")
             break
         end
     end
 
-    if not houseMaxResident or houseMaxResident <= #idsTable then
+    if houseMaxResident and houseMaxResident <= #idsTable then
         DBG:Info("Resident limit exceeded: " .. #idsTable)
-        NotifyClient(recSource, _U("notEnoughRoommateSlots"), 4000, "error")
+        if recSource and GetPlayerName(recSource) then
+            NotifyClient(recSource, _U("notEnoughRoommateSlots"), 4000, "error")
+        end
         NotifyClient(_source, _U("notEnoughRoommateSlots"), 4000, "error")
         if cb then cb(false) end
         return
@@ -123,12 +127,12 @@ BccUtils.RPC:Register('bcc-housing:NewPlayerGivenAccess', function(params, cb, s
         local affectedRows = MySQL.update.await("UPDATE bcchousing SET allowed_ids = ? WHERE houseid = ?", { encodedIds, houseid })
         if affectedRows > 0 then
             DBG:Info("Access list updated successfully for houseid: " .. tostring(houseid))
-            if recSource then
+            if recSource and GetPlayerName(recSource) then
                 BccUtils.RPC:Notify('bcc-housing:ClientRecHouseLoad', {}, recSource)
             end
         else
             DBG:Info("Update failed for houseid: " .. tostring(houseid))
-            if recSource then
+            if recSource and GetPlayerName(recSource) then
                 NotifyClient(recSource, _U("giveAccesFailed"), 4000, "error")
             end
             if cb then cb(false) end
@@ -183,7 +187,7 @@ BccUtils.RPC:Register('bcc-housing:RemovePlayerAccess', function(params, cb, src
 
     local found = false
     for i, id in ipairs(allowedIds) do
-        if id == playerId then
+        if tostring(id) == tostring(playerId) then
             table.remove(allowedIds, i)
             found = true
             DBG:Info("Found and removed player ID from allowed list. Updated list: " ..

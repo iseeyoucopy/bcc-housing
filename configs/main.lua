@@ -94,12 +94,12 @@ Config = {
     --Maximum allowed houses per character
     Setup = {
         MaxHousePerChar = 1,
-        DefaultRentalCurrency = 0, -- 0 cash, 1 gold
+        DefaultRentalCurrency = 0, -- 0 cash, 1 gold, 2 Rol Tokens
         RentedInventoryLimitMultiplier = 0.5, -- 50% of base limit
     },
     -----------------------------------------------------
 
-    collectTaxes = true,
+    collectTaxes = false,
     -- New properties are billed monthly on their purchased_at anniversary day.
     -- TaxDay is only used to assign a fallback purchased_at date to legacy database rows.
     TaxDay = 26,

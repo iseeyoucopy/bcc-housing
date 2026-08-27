@@ -1,5 +1,7 @@
 PurchasedHouses = PurchasedHouses or {}
 SuppressHousePreviewStopOnMenuClose = false
+local purchasedHouseLookup = {}
+local houseSaleBlipsDirty = true
 local housePreviewState = {
     active = false,
     house = nil,
@@ -8,6 +10,60 @@ local housePreviewState = {
 local housePreviewPromptGroup
 local housePreviewClosePrompt
 local HOUSE_PREVIEW_GROUND_VISUAL_OFFSET = 0.12
+
+local function houseCoordsKey(coords)
+    if not coords then return nil end
+
+    local x = math.floor((tonumber(coords.x) or 0.0) * 100 + 0.5)
+    local y = math.floor((tonumber(coords.y) or 0.0) * 100 + 0.5)
+    local z = math.floor((tonumber(coords.z) or 0.0) * 100 + 0.5)
+
+    return x .. ':' .. y .. ':' .. z
+end
+
+local function rebuildPurchasedHouseLookup()
+    purchasedHouseLookup = {}
+    for _, coords in ipairs(PurchasedHouses) do
+        local key = houseCoordsKey(coords)
+        if key then
+            purchasedHouseLookup[key] = true
+        end
+    end
+    houseSaleBlipsDirty = true
+end
+
+local function isHousePurchased(house)
+    local key = houseCoordsKey(house and house.houseCoords)
+    return key and purchasedHouseLookup[key] == true
+end
+
+local function refreshHouseSaleBlips()
+    if not houseSaleBlipsDirty then return end
+
+    for _, house in pairs(Houses) do
+        local isPurchased = isHousePurchased(house)
+        local existingBlip = HouseBlips[house.uniqueName]
+
+        if isPurchased and existingBlip then
+            BccUtils.Blips:RemoveBlip(existingBlip.rawblip)
+            HouseBlips[house.uniqueName] = nil
+        elseif not isPurchased and house.blip.sale.active and not existingBlip then
+            local houseSaleBlip = BccUtils.Blips:SetBlip(
+                house.blip.sale.name, house.blip.sale.sprite, 0.2,
+                house.menuCoords.x, house.menuCoords.y, house.menuCoords.z
+            )
+            HouseBlips[house.uniqueName] = houseSaleBlip
+
+            local blipModifier = BccUtils.Blips:AddBlipModifier(
+                houseSaleBlip,
+                Config.BlipColors[house.blip.sale.color]
+            )
+            blipModifier:ApplyModifier()
+        end
+    end
+
+    houseSaleBlipsDirty = false
+end
 
 local function normalizeHouseCurrencyType(rawCurrency, isRental)
     local currencyType = tonumber(rawCurrency)
@@ -209,6 +265,7 @@ CreateThread(function()
     else
         DBG:Error("Failed to fetch purchased houses via RPC")
     end
+    rebuildPurchasedHouseLookup()
 
     local PromptGroup = BccUtils.Prompt:SetupPromptGroup()
     local BuyHousePrompt = PromptGroup:RegisterPrompt(
@@ -218,76 +275,51 @@ CreateThread(function()
     )
 
     while true do
-        Wait(0)
-
         local playerPed = PlayerPedId()
-        if IsEntityDead(playerPed) then goto END end
+        local sleep = 1000
+        if not IsEntityDead(playerPed) then
+            local playerCoords = GetEntityCoords(playerPed)
+            refreshHouseSaleBlips()
 
-        local playerCoords = GetEntityCoords(playerPed)
+            for _, house in pairs(Houses) do
+                if not isHousePurchased(house) then
+                    local distance = GetDistanceBetweenCoords(playerCoords, house.menuCoords, true)
 
-        for _, house in pairs(Houses) do
-            local isPurchased = false
-
-            -- Check if the house has been purchased
-            for _, purchasedHouse in pairs(PurchasedHouses) do
-                if #(house.houseCoords - purchasedHouse) < 0.1 then
-                    isPurchased = true
-                    break
-                end
-            end
-
-            -- If the house is purchased and blip exists, remove it
-            if isPurchased and HouseBlips[house.uniqueName] then
-                BccUtils.Blips:RemoveBlip(HouseBlips[house.uniqueName].rawblip)
-                HouseBlips[house.uniqueName] = nil
-            elseif not isPurchased then
-                local distance = GetDistanceBetweenCoords(playerCoords, house.menuCoords, true)
-
-                -- Only create blips if blip.sale.active is true and blip hasn't been created yet
-                if house.blip.sale.active and not HouseBlips[house.uniqueName] then
-                    local houseSaleBlip = BccUtils.Blips:SetBlip(
-                        house.blip.sale.name, house.blip.sale.sprite, 0.2,
-                        house.menuCoords.x, house.menuCoords.y, house.menuCoords.z
-                    )
-                    HouseBlips[house.uniqueName] = houseSaleBlip
-
-                    local blipModifier = BccUtils.Blips:AddBlipModifier(houseSaleBlip,
-                        Config.BlipColors[house.blip.sale.color])
-                    blipModifier:ApplyModifier()
-                end
-
-                if distance < house.menuRadius then
-                    local purchaseCurrency = normalizeHouseCurrencyType(house.currencyType, false)
-                    local rentalEnabled = isHouseRentalEnabled(house)
-                    local rentalCurrency = normalizeHouseCurrencyType(house.currencyType, true)
-                    local promptCurrency = getPromptCurrency(rentalCurrency)
-                    local promptPrice = tostring(house.price or 0)
-                    local promptRent = tostring(house.rentalDeposit or 0)
-                    if not rentalEnabled then
-                        PromptGroup:ShowGroup(_U("buyPricePromptNoRent", promptPrice, getPromptCurrency(purchaseCurrency)))
-                    else
-                        if purchaseCurrency ~= rentalCurrency then
-                            promptCurrency = getPromptCurrency(purchaseCurrency) .. ' / ' .. getPromptCurrency(rentalCurrency)
+                    if distance < house.menuRadius then
+                        sleep = 0
+                        local purchaseCurrency = normalizeHouseCurrencyType(house.currencyType, false)
+                        local rentalEnabled = isHouseRentalEnabled(house)
+                        local rentalCurrency = normalizeHouseCurrencyType(house.currencyType, true)
+                        local promptCurrency = getPromptCurrency(rentalCurrency)
+                        local promptPrice = tostring(house.price or 0)
+                        local promptRent = tostring(house.rentalDeposit or 0)
+                        if not rentalEnabled then
+                            PromptGroup:ShowGroup(_U("buyPricePromptNoRent", promptPrice, getPromptCurrency(purchaseCurrency)))
+                        else
+                            if purchaseCurrency ~= rentalCurrency then
+                                promptCurrency = getPromptCurrency(purchaseCurrency) .. ' / ' .. getPromptCurrency(rentalCurrency)
+                            end
+                            PromptGroup:ShowGroup(_U("buyPricePrompt", promptPrice, promptRent, promptCurrency))
                         end
-                        PromptGroup:ShowGroup(_U("buyPricePrompt", promptPrice, promptRent, promptCurrency))
+                        if BuyHousePrompt:HasCompleted() then
+                            OpenBuyHouseMenu(house)
+                        end
                     end
-                    if BuyHousePrompt:HasCompleted() then
-                        OpenBuyHouseMenu(house)
-                    end
-                end
 
-                if house.showmarker and distance < 100 then
-                    DrawMarker(0x94FDAE17,
-                        house.menuCoords.x, house.menuCoords.y, house.menuCoords.z - 1,
-                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                        1.0, 1.0, 0.3,
-                        0, 128, 0, 155,
-                        false, false, false, 0, false, false, false
-                    )
+                    if house.showmarker and distance < 100 then
+                        sleep = 0
+                        DrawMarker(0x94FDAE17,
+                            house.menuCoords.x, house.menuCoords.y, house.menuCoords.z - 1,
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            1.0, 1.0, 0.3,
+                            0, 128, 0, 155,
+                            false, false, false, 0, false, false, false
+                        )
+                    end
                 end
             end
         end
-        ::END::
+        Wait(sleep)
     end
 end)
 
@@ -297,6 +329,7 @@ BccUtils.RPC:Register('bcc-housing:housePurchased', function(params)
     local coords = params.houseCoords or params
     if type(coords) == "table" and coords.x and coords.y and coords.z then
         table.insert(PurchasedHouses, vector3(coords.x, coords.y, coords.z))
+        rebuildPurchasedHouseLookup()
     end
 end)
 
@@ -311,6 +344,7 @@ BccUtils.RPC:Register('bcc-housing:ReinitializeChecksAfterSale', function()
                 PurchasedHouses[#PurchasedHouses + 1] = coords
             end
         end
+        rebuildPurchasedHouseLookup()
     end
 end)
 

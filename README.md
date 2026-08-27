@@ -10,7 +10,7 @@
 - bcc-utils
 - bcc-doorlocks
 - feather-menu
-- PolyZone
+- [PolyZone](https://github.com/mkafrin/PolyZone/)
 
 # Features
 - Admin locked command to create houses!
@@ -54,7 +54,7 @@
 # New Version Configuration
 - `configs/main.lua`: PolyZone controls, property deeds, rental defaults, allowed realtor jobs, and notification settings.
 - `configs/houses.lua`: per-house `currencyType`, `allowRental`, `rentalDeposit`, `rentCharge`, and optional PolyZone fields.
-- `PolyZone` is now a required dependency.
+- [PolyZone](https://github.com/mkafrin/PolyZone/) is now a required dependency.
 
 # Rol Tokens
 - `Rol Tokens` is the user-facing name for the VORP character `rol` balance.

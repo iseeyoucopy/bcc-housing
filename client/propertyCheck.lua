@@ -33,7 +33,7 @@ local function propertyKeyFromVector(vec)
     return string.format("%.2f:%.2f:%.2f", vec.x, vec.y, vec.z)
 end
 
-local function registerPrivateProperty(coords, radius, houseId, polyPoints, polyMinZ, polyMaxZ)
+local function registerPrivateProperty(coords, radius, houseId, polyPoints, polyMinZ, polyMaxZ, hasAccess)
     local vec = toVector3(coords)
     if not vec then
         DBG:Warning("Invalid coordinates supplied for private property registration.")
@@ -60,6 +60,7 @@ local function registerPrivateProperty(coords, radius, houseId, polyPoints, poly
         polyPoints = normalizedPoly,
         polyMinZ = tonumber(polyMinZ),
         polyMaxZ = tonumber(polyMaxZ),
+        hasAccess = hasAccess == true,
         zone = zone,
         spawnState = "cleared",
         devContextCreated = false
@@ -267,7 +268,7 @@ CreateThread(function()
                             insideArea = threshold and threshold > 0 and distance <= threshold
                         end
 
-                        if insideArea then
+                        if insideArea and not data.hasAccess then
                             if currentPropertyKey == key then
                                 currentInside = true
                                 nearestDistance = distance
@@ -311,7 +312,7 @@ CreateThread(function()
     end
 end)
 
-local function startPrivatePropertyCheck(houseCoords, houseRadius, houseId, polyPoints, polyMinZ, polyMaxZ)
+local function startPrivatePropertyCheck(houseCoords, houseRadius, houseId, polyPoints, polyMinZ, polyMaxZ, hasAccess)
     if not Config.EnablePrivatePropertyCheck then
         DBG:Info("Private property check is disabled in the config.")
         return
@@ -322,7 +323,7 @@ local function startPrivatePropertyCheck(houseCoords, houseRadius, houseId, poly
         return
     end
 
-    registerPrivateProperty(houseCoords, houseRadius, houseId, polyPoints, polyMinZ, polyMaxZ)
+    registerPrivateProperty(houseCoords, houseRadius, houseId, polyPoints, polyMinZ, polyMaxZ, hasAccess)
 end
 
 local function stopPrivatePropertyCheck()
@@ -338,7 +339,7 @@ end
 
 BccUtils.RPC:Register('bcc-housing:PrivatePropertyCheckHandler', function(params)
     if not params or not params.coords then return end
-    startPrivatePropertyCheck(params.coords, params.radius, params.houseid, params.polyPoints, params.polyMinZ, params.polyMaxZ)
+    startPrivatePropertyCheck(params.coords, params.radius, params.houseid, params.polyPoints, params.polyMinZ, params.polyMaxZ, params.hasAccess)
 end)
 
 BccUtils.RPC:Register('bcc-housing:StopPropertyCheck', function()

@@ -1,6 +1,6 @@
 <2.5.0>
 ## Property Areas and Purchase Experience
-- Added PolyZone property boundaries as an alternative to radius-based property areas.
+- Added PolyZone property boundaries as an alternative to radius-based property areas: https://github.com/mkafrin/PolyZone/
 - Added admin and realtor tools to capture, edit, export, save, and preview property PolyZones.
 - Added property-area previews for players before purchasing or renting a configured house.
 - Added property-area previews and configured-house teleport options to the admin menu.

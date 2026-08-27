@@ -97,6 +97,45 @@ local function getLedgerMenuLabels(houseId)
     return _U("ledger"), _U("ledgerInsert")
 end
 
+local function getHousePreviewData(houseId)
+    local context = GetHouseContext and GetHouseContext(houseId)
+    local houseConfig = getHouseConfigForMenu(houseId)
+
+    local coords = (context and context.coords) or (houseConfig and houseConfig.houseCoords)
+    if not coords and HouseId and tonumber(houseId) == tonumber(HouseId) then
+        coords = HouseCoords
+    end
+
+    local radius = (context and context.radius) or (houseConfig and houseConfig.houseRadiusLimit)
+    if not radius and HouseId and tonumber(houseId) == tonumber(HouseId) then
+        radius = HouseRadius
+    end
+
+    local polyPoints = (context and context.polyPoints) or (houseConfig and houseConfig.polyPoints)
+    local polyMinZ = (context and context.polyMinZ) or (houseConfig and houseConfig.polyMinZ)
+    local polyMaxZ = (context and context.polyMaxZ) or (houseConfig and houseConfig.polyMaxZ)
+
+    if (type(polyPoints) ~= "table" or #polyPoints < 3) and HouseId and tonumber(houseId) == tonumber(HouseId) then
+        polyPoints = ActiveHousePolyPoints
+        polyMinZ = ActiveHousePolyMinZ
+        polyMaxZ = ActiveHousePolyMaxZ
+    end
+
+    if not coords and not houseConfig then
+        return nil
+    end
+
+    return {
+        uniqueName = (context and context.uniqueName) or (houseConfig and houseConfig.uniqueName),
+        houseCoords = coords,
+        menuCoords = (houseConfig and houseConfig.menuCoords) or coords,
+        houseRadiusLimit = tonumber(radius) or tonumber(Config.DefaultMenuManageRadius) or 2.0,
+        polyPoints = polyPoints,
+        polyMinZ = tonumber(polyMinZ),
+        polyMaxZ = tonumber(polyMaxZ)
+    }
+end
+
 local function openLedgerMenu(houseId, isOwner, ownershipStatus, parentRoute, paymentOnly)
     local ledgerTitle, ledgerInsertLabel = getLedgerMenuLabels(houseId)
     local ledgerPage = BCCHousingMenu:RegisterPage('bcc-housing:ledger:page')
@@ -525,6 +564,22 @@ function OpenHousingMainMenu(houseId, isOwner, ownershipStatus, taxPaymentReleas
         style = {}
     }, function()
         openHousingInventoryPage(houseId, isOwner, housingMainMenu)
+    end)
+
+    housingMainMenu:RegisterElement('button', {
+        label = _U("previewHouseArea"),
+        style = {}
+    }, function()
+        local previewData = getHousePreviewData(houseId)
+        if not previewData or not StartHouseAreaPreview then
+            Notify(_U("houseAreaPreviewFailed"), 'error', 4000)
+            return
+        end
+
+        StartHouseAreaPreview(previewData)
+        SuppressHousePreviewStopOnMenuClose = true
+        Notify(_U("houseAreaPreviewStarted", tostring(houseId)), 'success', 4000)
+        BCCHousingMenu:Close()
     end)
 
     -- Enter/Exit TP House if available

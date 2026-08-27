@@ -114,6 +114,9 @@ Locales["pl_lang"] = {
     rotateYaw_desc = 'Obróć obiekt w prawo (oś pionowa)',
     rotateYawLeft = 'Obróć w lewo',
     rotateYawLeft_desc = 'Obróć obiekt w lewo (oś pionowa).',
+    rotationControls = "Sterowanie obrotem",
+    precisionControls = "Sterowanie precyzją",
+    actionsTab = "Akcje",
     increasePrecision = "Zwiększ Precyzję",
     decreasePrecision = "Zmniejsz Precyzję",
     confirmPlacement = "Potwierdź Ustawienie",
@@ -432,4 +435,11 @@ Locales["pl_lang"] = {
     -- New
     freeHouseBlipsHidden = "Znaczniki wolnych domów zostały ukryte.",
     freeHouseBlipsShown = "Znaczniki wolnych domów są teraz widoczne.",
+    unknownError = "Unknown error.",
+    invalidHouseId = "Invalid house ID.",
+    furnNotSoldInvalid = "Furniture cannot be sold from this location.",
+    doorCreationFailed = "Failed to create door.",
+    doorSaveFailed = "Failed to save door.",
+    doorRemoveFailed = "Failed to remove door.",
+    switchTab = "Zmień zakładkę",
 }

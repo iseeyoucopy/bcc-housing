@@ -383,21 +383,35 @@ local function refreshPlayerHouses(targetSource)
         for _, v in ipairs(result) do
             v.purchased_at_formatted = formatPurchasedAt(v.purchased_at)
             local decodedCoords = json.decode(v.house_coords)
+            local ownerIdString = tostring(v.charidentifier)
+            local ownerIdNumber = tonumber(v.charidentifier)
+            local hasAccessToProperty = (charIdentifierNumber and ownerIdNumber and charIdentifierNumber == ownerIdNumber) or ownerIdString == charIdentifierString
+
+            if not hasAccessToProperty then
+                local allowedIdsTable = (v.allowed_ids ~= nil and v.allowed_ids ~= 'none') and json.decode(v.allowed_ids) or nil
+                if allowedIdsTable then
+                    for _, allowedId in ipairs(allowedIdsTable) do
+                        if tostring(allowedId) == charIdentifierString then
+                            hasAccessToProperty = true
+                            break
+                        end
+                    end
+                end
+            end
+
             BccUtils.RPC:Notify('bcc-housing:PrivatePropertyCheckHandler', {
                 coords = decodedCoords,
                 radius = v.house_radius_limit,
                 houseid = v.houseid,
                 polyPoints = decodePolyPoints(v.poly_points),
                 polyMinZ = tonumber(v.poly_min_z),
-                polyMaxZ = tonumber(v.poly_max_z)
+                polyMaxZ = tonumber(v.poly_max_z),
+                hasAccess = hasAccessToProperty
             }, targetSource)
 
             local currentStage = tonumber(v.inventory_current_stage) or 0
             local finalLimit = select(1, calculateFinalInventoryLimit(v.invlimit, v.ownershipStatus, currentStage))
             ensureHouseInventoryRegistered(v.houseid, v, finalLimit)
-
-            local ownerIdString = tostring(v.charidentifier)
-            local ownerIdNumber = tonumber(v.charidentifier)
 
             if (charIdentifierNumber and ownerIdNumber and charIdentifierNumber == ownerIdNumber) or ownerIdString == charIdentifierString then
                 table.insert(accessibleHouses, v.houseid)
@@ -407,15 +421,9 @@ local function refreshPlayerHouses(targetSource)
                 BccUtils.RPC:Notify('bcc-housing:ShowMessage', { message = "You own house ID: " .. tostring(v.houseid) }, targetSource)
                 DBG:Info("Player " .. charIdentifierString .. " owns house ID: " .. tostring(v.houseid))
             else
-                local allowedIdsTable = (v.allowed_ids ~= nil and v.allowed_ids ~= 'none') and json.decode(v.allowed_ids) or nil
-                if allowedIdsTable then
-                    for _, allowedId in ipairs(allowedIdsTable) do
-                        if tostring(allowedId) == charIdentifierString then
-                            table.insert(accessibleHouses, v.houseid)
-                            BccUtils.RPC:Notify('bcc-housing:OwnsHouseClientHandler', { house = v, isOwner = false }, targetSource)
-                            break
-                        end
-                    end
+                if hasAccessToProperty then
+                    table.insert(accessibleHouses, v.houseid)
+                    BccUtils.RPC:Notify('bcc-housing:OwnsHouseClientHandler', { house = v, isOwner = false }, targetSource)
                 end
             end
         end
